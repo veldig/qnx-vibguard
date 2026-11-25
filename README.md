@@ -42,7 +42,7 @@ Measured per run: tick jitter, ticks later than 1.5x the period, analysis time, 
 
 ## Results
 
-All numbers below were measured by vibguard on QNX 8.0 in real time (200 Hz). The QNX target is an x86_64 VM running under QEMU emulation on an Apple Silicon Mac, so absolute timing is limited by the emulator. Compare runs against each other, not against bare metal.
+All numbers below were measured by vibguard on QNX 8.0 in real time (200 Hz). The QNX target is an x86_64 VM running under QEMU emulation on an Apple Silicon Mac, so absolute timing there is limited by the emulator. The KVM section below reruns the same image with hardware virtualization.
 
 ### Closed loop: guard off vs guard on (simulated joint, 60 s each)
 
@@ -73,14 +73,30 @@ Notes:
 - L2 degraded but was not fully starved, even though higher-priority hogs ran on both CPUs. I have not confirmed why; the emulated scheduler is a likely factor.
 - A QNX detail I hit along the way: the receiver of a pulse runs at the pulse's priority. My first L2 run created the timer pulse at priority 50, so the acquisition thread was boosted even at default priority and stayed on time. L2 above uses `SIGEV_PULSE_PRIO_INHERIT` so the thread really runs at its own priority.
 
-### Timing on the emulated target
+### Timing: emulated VM vs KVM
 
-| | Median | p99 |
+The same QNX image and binaries, run two ways: QEMU emulation (TCG) on the Mac, and QEMU with KVM hardware virtualization on a Google Cloud n2-standard-4 VM with nested virtualization (2 vCPUs, 1 GB for QNX). Results from the KVM run are in `results/kvm/`.
+
+| Measured | Emulated (TCG, Mac) | KVM (cloud) |
 |---|---|---|
-| Tick jitter (guard on, 60 s) | 0.33 ms | 1.74 ms |
-| Analysis time (RMS + FFT, 256 samples) | 0.33 ms | 0.56 ms |
+| timer200 jitter, FIFO 63 (median / p99 / max) | 363.1 / 1717.4 / 4680.5 us | 13.5 / 85.2 / 121.2 us |
+| vibguard tick jitter, guard on 60 s (median / p99 / max) | 0.33 / 1.74 / 6.7 to 18.3 ms | 15.3 / 100.5 / 304.5 us |
+| Ticks later than 7.5 ms, guard on 60 s | not recorded | 0 of 11999 |
+| Analysis time, RMS + FFT on 256 samples (median / p99) | 0.33 / 0.56 ms | 12.5 / 41.6 us |
+| Alert latency, sample to jerk command | 0.53 to 0.70 ms | 44 to 93 us |
 
-QNX's real strength is deterministic timing, and an emulated VM hides it. A run under KVM hardware virtualization is planned for more representative numbers.
+Under emulation, 42.9 % of timer200 intervals were off by more than 10 %; under KVM, none were. Under KVM the 200 Hz loop holds its period to within about 0.1 ms at p99, and analysis plus control finish in tens of microseconds. The closed-loop outcome was identical on both (160.7 mg open loop vs 26.4 mg guarded), as expected for a deterministic simulation.
+
+### Noisy neighbour under KVM
+
+| | L0: no load | L1: hogs, FIFO 50/45/40 | L2: hogs, default priority 10 |
+|---|---|---|---|
+| Ticks later than 7.5 ms | 0 of 5999 | 0 of 5999 | 0 of 5999 |
+| Tick jitter p99 / max | 107.1 / 214.0 us | 96.0 / 285.5 us | 115.5 / 255.6 us |
+| Max analysis lag | 124.1 us | 164.5 us | 285.9 us |
+| Alert latency | 41 to 57 us | 43 us | 69 to 71 us |
+
+Honest result: under KVM, L2 did not degrade. The hogs ran (about 35 million spin blocks in both L1 and L2, `setschedparam` returned 0), yet the default-priority loop stayed on time. So the L2 degradation measured under emulation does not reproduce on KVM, and I do not claim that priorities were what protected the loop. I have not yet confirmed the cause.
 
 ## Repository layout
 
@@ -125,7 +141,8 @@ Run it by hand on the QNX target:
 ## Limitations and next steps
 
 - The robot loop is simulated. The next step is the real SCARA robot: live WT901 input and a real jerk-limit command to the ESP32 motion controller.
-- Timing numbers come from an emulated VM. KVM or real hardware (Raspberry Pi 5) will give representative jitter.
+- Timing numbers come from VMs (emulated, and KVM on a cloud host), not bare metal. A Raspberry Pi 5 or x86 board would be the next step.
+- The noisy-neighbour degradation seen under emulation did not reproduce under KVM; the cause is not yet confirmed.
 - An aarch64 image boots under emulation, but not yet under Apple's hardware virtualization: QNX's `startup-qemu-virt` asserts in its GICv3 code under HVF, and QEMU's HVF backend has no GICv2.
 
 ## Author

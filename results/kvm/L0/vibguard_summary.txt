@@ -1,0 +1,13 @@
+
+=== vibguard summary (measured on this run) ===
+input simulated SCARA joint, 6000 samples replayed, speedup x1.0
+load: 0 hog thread(s) at FIFO 20; vibguard SCHED_FIFO 50/45/40
+effective thread policy/prio: acq FIFO 50, ana FIFO 40, ctl FIFO 45
+max analysis lag (newest sample -> analysis done): 124.1 us
+acq |jitter| us              n=5999   mean=     23.6  min=      0.0  p50=     16.9  p99=    107.1  max=    214.0
+ticks later than 1.5x period: 0 of 5999 (0.00%)
+analysis time us             n=574    mean=     16.9  min=     10.9  p50=     16.8  p99=     56.0  max=     69.6
+alert latency us             n=2      mean=     48.9  min=     41.2  p50=     56.6  p99=     41.2  max=     56.6
+events: 1 alerts (jerk lowered), 1 further reductions, 0 restore steps; final jerk 25.0%
+max window RMS 156.9 mg
+sim: mean RMS while drawing 25.8 mg (474 windows); moves completed 20, mean move time 1.204 s
