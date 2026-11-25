@@ -55,23 +55,24 @@ All numbers below were measured by vibguard on QNX 8.0 in real time (200 Hz). Th
 
 This is the same trade-off my research studies: a gentler profile costs a little cycle time and removes most of the vibration.
 
-### Noisy neighbour: do priorities protect the 200 Hz loop? (30 s each)
+### Noisy neighbour: do priorities protect the 200 Hz loop? (KVM, 30 s each)
 
-Two CPU-hog threads at SCHED_FIFO 15 saturate both of the VM's CPUs.
+Two CPU-hog threads at SCHED_FIFO 15 spin on both of the VM's CPUs for the whole run (each summary prints the acquisition window next to each hog's start and end to prove the overlap). Results in `results/kvm_load/`.
 
-| | L0: no load | L1: hogs, vibguard at FIFO 50/45/40 | L2: hogs, vibguard at default priority 10 |
-|---|---|---|---|
-| Ticks later than 7.5 ms | 2 of 5999 | 0 of 5999 | 52 of 5999 |
-| Longest tick interval | 12.5 ms | 2.2 ms | 36.0 ms |
-| Max analysis lag | 1.6 ms | 2.1 ms | 40.1 ms |
-| Alert latency | 0.68 to 0.70 ms | 0.75 to 1.00 ms | 0.87 to 1.22 ms |
+| | L0: no load | L1: hogs, vibguard FIFO 50/45/40 | L2: hogs, vibguard default priority 10 | L3: hogs at FIFO 60, above vibguard |
+|---|---|---|---|---|
+| Samples more than 2.5 ms behind schedule | 0 of 6000 | 0 of 6000 | 5998 of 6000 | 5998 of 6000 |
+| Worst sample behind schedule | 0.1 ms | 0.1 ms | 30.0 s | 30.0 s |
+| Vibration alert issued after the sample's scheduled time | same as L0 | same as L0 | 24.9 s late | 23.4 s late |
 
-![noisy neighbour](results/vibguard_noisy_neighbour.png)
+![noisy neighbour under KVM](results/vibguard_noisy_neighbour_kvm.png)
 
-Notes:
-- Vibration was 25.8 mg in all three runs. The simulated moves take about 1.2 s, so stalls of tens of milliseconds did not change the control outcome here. The test shows protected timing, not a control failure.
-- L2 degraded but was not fully starved, even though higher-priority hogs ran on both CPUs. I have not confirmed why; the emulated scheduler is a likely factor.
-- A QNX detail I hit along the way: the receiver of a pulse runs at the pulse's priority. My first L2 run created the timer pulse at priority 50, so the acquisition thread was boosted even at default priority and stayed on time. L2 above uses `SIGEV_PULSE_PRIO_INHERIT` so the thread really runs at its own priority.
+With priorities above the load, the loop is untouched: tick jitter p99 was 52.1 us in L1. Below the load, the acquisition thread does not run at all until the hogs finish; the timer pulses queue up and are drained in one burst at the end. L3 is the control: the same starvation happens to the real-time configuration once something outranks it, which is exactly what strict priority scheduling predicts.
+
+Two lessons from getting this test right:
+- **My first version of the test was wrong.** vibguard's main thread runs at default priority and created the FIFO hogs before the control threads. The hogs took both CPUs, so main could not even start the control loop until they finished, and every "under load" run (on the emulated target and on KVM) actually ran with no load. A `pidin` sample showed the hogs already dead when the loop was running. The fix: start acquisition first, then the hogs, and print both time windows in every summary. The old load-test numbers were dropped.
+- **Interval-based metrics hide stalls.** In L2 my original metric ("ticks later than 1.5x the period") reported 1 late tick, because one 30 s gap was followed by 5997 queued ticks back to back. vibguard now also measures each sample against its schedule and each alert against its sample's scheduled time.
+- The closed-loop numbers in the simulation did not change under starvation, because the simulated plant advances per sample, not per wall-clock second. On a real robot, a 25 s late vibration alert is the failure.
 
 ### Timing: emulated VM vs KVM
 
@@ -86,17 +87,6 @@ The same QNX image and binaries, run two ways: QEMU emulation (TCG) on the Mac, 
 | Alert latency, sample to jerk command | 0.53 to 0.70 ms | 44 to 93 us |
 
 Under emulation, 42.9 % of timer200 intervals were off by more than 10 %; under KVM, none were. Under KVM the 200 Hz loop holds its period to within about 0.1 ms at p99, and analysis plus control finish in tens of microseconds. The closed-loop outcome was identical on both (160.7 mg open loop vs 26.4 mg guarded), as expected for a deterministic simulation.
-
-### Noisy neighbour under KVM
-
-| | L0: no load | L1: hogs, FIFO 50/45/40 | L2: hogs, default priority 10 |
-|---|---|---|---|
-| Ticks later than 7.5 ms | 0 of 5999 | 0 of 5999 | 0 of 5999 |
-| Tick jitter p99 / max | 107.1 / 214.0 us | 96.0 / 285.5 us | 115.5 / 255.6 us |
-| Max analysis lag | 124.1 us | 164.5 us | 285.9 us |
-| Alert latency | 41 to 57 us | 43 us | 69 to 71 us |
-
-Honest result: under KVM, L2 did not degrade. The hogs ran (about 35 million spin blocks in both L1 and L2, `setschedparam` returned 0), yet the default-priority loop stayed on time. So the L2 degradation measured under emulation does not reproduce on KVM, and I do not claim that priorities were what protected the loop. I have not yet confirmed the cause.
 
 ## Repository layout
 
@@ -142,7 +132,6 @@ Run it by hand on the QNX target:
 
 - The robot loop is simulated. The next step is the real SCARA robot: live WT901 input and a real jerk-limit command to the ESP32 motion controller.
 - Timing numbers come from VMs (emulated, and KVM on a cloud host), not bare metal. A Raspberry Pi 5 or x86 board would be the next step.
-- The noisy-neighbour degradation seen under emulation did not reproduce under KVM; the cause is not yet confirmed.
 - An aarch64 image boots under emulation, but not yet under Apple's hardware virtualization: QNX's `startup-qemu-virt` asserts in its GICv3 code under HVF, and QEMU's HVF backend has no GICv2.
 
 ## Author

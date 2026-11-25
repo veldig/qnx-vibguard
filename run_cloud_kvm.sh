@@ -11,6 +11,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/opt/homebrew/share/google-cloud-s
 step() { echo; echo "######## $* ($(date +%H:%M:%S))"; }
 fail() { echo; echo "FAILED: $*"; echo "STATUS=FAILED"; exit 1; }
 VM=qnx-kvm-test; ZONE=us-central1-a
+REMOTE=${REMOTE:-remote_kvm.sh}; OUTDIR=${OUTDIR:-results/kvm}
 
 step "1. Google Cloud CLI"
 command -v gcloud >/dev/null || brew install --cask google-cloud-sdk || fail "install gcloud"
@@ -33,7 +34,7 @@ if [ "$BILLING_ON" != "True" ]; then
   gcloud billing projects link "$PROJECT" --billing-account "$ACCT" || fail "link billing"
 fi
 echo
-echo "COST CHECK: this creates one n2-standard-4 VM (about \$0.20/hour) for ~15-20 min, then deletes it."
+echo "COST CHECK: this creates one n2-standard-4 VM (about \$0.20/hour) for ~10-20 min, then deletes it."
 echo "Expected charge on your card: roughly \$0.10-0.30."
 read -r -p "Type yes to continue: " OK
 [ "$OK" = "yes" ] || fail "cancelled by user"
@@ -42,7 +43,7 @@ gcloud services enable compute.googleapis.com -q || fail "enable Compute Engine 
 step "2. Package the QNX image + binaries (QNX files stay private: copied only to your own VM)"
 [ -f vm/output/ifs.bin ] && [ -f build/vibguard ] || fail "run go.sh and run_vibguard.sh first"
 tar czf /tmp/qnxkvm.tgz vm/output/ifs.bin vm/output/disk-qemu vm/output/disk-qemu.vmdk build/vibguard build/timer200 build/hello \
-  keys/qnx_vm_key keys/qnx_vm_key.pub data/wt901_20261005_121751.csv scripts/remote_kvm.sh || fail tar
+  keys/qnx_vm_key keys/qnx_vm_key.pub data/wt901_20261005_121751.csv scripts/remote_kvm.sh scripts/remote_kvm_diag.sh scripts/remote_kvm_load.sh || fail tar
 ls -la /tmp/qnxkvm.tgz
 
 step "3. Create VM with nested virtualization (n2-standard-4, Ubuntu 22.04)"
@@ -55,11 +56,11 @@ for i in $(seq 1 30); do gcloud compute ssh "$VM" --zone "$ZONE" -q --command tr
 
 step "4. Upload + run under KVM"
 gcloud compute scp /tmp/qnxkvm.tgz "$VM":~ --zone "$ZONE" -q || fail scp
-gcloud compute ssh "$VM" --zone "$ZONE" -q --command 'mkdir -p qnxkvm && tar xzf qnxkvm.tgz -C qnxkvm && bash qnxkvm/scripts/remote_kvm.sh' || fail "remote run"
+gcloud compute ssh "$VM" --zone "$ZONE" -q --command "mkdir -p qnxkvm && tar xzf qnxkvm.tgz -C qnxkvm && bash qnxkvm/scripts/$REMOTE" || fail "remote run"
 
 step "5. Bring results back"
 gcloud compute ssh "$VM" --zone "$ZONE" -q --command 'tar czf kvm_results.tgz kvm_results' || fail "tar results"
 gcloud compute scp "$VM":~/kvm_results.tgz /tmp/ --zone "$ZONE" -q || fail "scp results"
-rm -rf results/kvm && mkdir -p results/kvm && tar xzf /tmp/kvm_results.tgz -C results/kvm --strip-components 1
-ls -la results/kvm
+mkdir -p "$OUTDIR" && tar xzf /tmp/kvm_results.tgz -C "$OUTDIR" --strip-components 1
+ls -la "$OUTDIR"
 echo "STATUS=OK (VM is deleted next)"

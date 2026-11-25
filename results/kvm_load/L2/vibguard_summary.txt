@@ -1,0 +1,15 @@
+
+=== vibguard summary (measured on this run) ===
+input simulated SCARA joint, 6000 samples replayed, speedup x1.0
+load: 2 hog thread(s) at FIFO 15; vibguard DEFAULT priority
+effective thread policy/prio: acq RR 10, ana RR 10, ctl RR 10
+hogs: 35853841 spin blocks total; setschedparam rc: 0 0
+acquisition window: 0.01 to 30.02 s; hog windows: [0.01 to 30.01 s] [0.01 to 30.01 s]
+max analysis lag (newest sample -> analysis done): 206.8 us
+acq |jitter| us              n=5999   mean=   9997.7  min=     28.1  p50=   4999.5  p99=   4999.5  max=29996569.0
+ticks later than 1.5x period: 1 of 5999 (0.02%)
+analysis time us             n=474    mean=      9.3  min=      6.1  p50=      6.3  p99=     94.0  max=    195.9
+alert latency us             n=2      mean=     36.0  min=     13.7  p50=     58.3  p99=     58.3  max=     58.3
+events: 1 alerts (jerk lowered), 1 further reductions, 0 restore steps; final jerk 25.0%
+max window RMS 157.8 mg
+sim: mean RMS while drawing 26.2 mg (394 windows); moves completed 20, mean move time 1.204 s

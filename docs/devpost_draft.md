@@ -58,20 +58,21 @@ Input can be a replay of real WT901 IMU recordings, or a simulated SCARA joint w
 
 That is the trade-off my research studies: a slightly slower, gentler profile removes most of the vibration.
 
-**Noisy neighbour, 30 s each:** two CPU-hog threads at FIFO 15 saturate both CPUs.
+**Noisy neighbour (KVM, 30 s each):** two CPU-hog threads at FIFO 15 spin on both CPUs for the whole run.
 
-| | No load | Hogs, vibguard at FIFO 50/45/40 | Hogs, vibguard at default priority |
-|---|---|---|---|
-| Ticks later than 7.5 ms | 2 of 5999 | 0 of 5999 | 52 of 5999 |
-| Longest tick interval | 12.5 ms | 2.2 ms | 36.0 ms |
-| Max analysis lag | 1.6 ms | 2.1 ms | 40.1 ms |
+| | No load | Hogs, vibguard at FIFO 50/45/40 | Hogs, vibguard at default priority | Hogs at FIFO 60, above vibguard |
+|---|---|---|---|---|
+| Samples more than 2.5 ms behind schedule | 0 of 6000 | 0 of 6000 | 5998 of 6000 | 5998 of 6000 |
+| Worst sample behind schedule | 0.1 ms | 0.1 ms | 30.0 s | 30.0 s |
+| Vibration alert after the sample's scheduled time | same as no load | same as no load | 24.9 s late | 23.4 s late |
 
-That table is from the emulated VM. **Under KVM** (Google Cloud, nested virtualization, same image): tick jitter p99 100.5 us, 0 of 11999 ticks late, analysis p99 41.6 us, alert latency 44 to 93 us. Under KVM the default-priority run (L2) did not degrade either (0 of 5999 late), so I do not claim priorities were what protected the loop; that cause is still open.
+**Timing, same image, emulated vs KVM (Google Cloud, nested virtualization):** tick jitter p99 1.74 ms vs 100.5 us; timer intervals off by more than 10%: 42.9% vs 0%; analysis p99 0.56 ms vs 41.6 us; sample-to-command latency 0.53 to 0.70 ms vs 44 to 93 us.
 
 ### Challenges I ran into
 - **No native macOS host tools for QNX SDP 8.0.** I set up QNX Software Center on macOS, installed the Linux host tools, and ran `qcc` and `mkqnximage` inside an x86_64 Docker container.
 - **Apple Silicon hardware virtualization.** I built an aarch64 QNX image to run it on Apple's hypervisor. Under HVF, `startup-qemu-virt` asserts in its GICv3 code, and QEMU's HVF backend has no GICv2, so the target runs under emulation for now.
-- **Pulse priority surprised me.** My first "default priority" load test showed no degradation. The cause was QNX itself: a thread receiving a pulse runs at the pulse's priority, and my timer pulse carried priority 50, so the acquisition thread was boosted. Switching that experiment to `SIGEV_PULSE_PRIO_INHERIT` made the comparison fair.
+- **My load test lied, twice.** First, vibguard's default-priority main thread created the FIFO hogs before the control threads, got starved, and only started the loop after the hogs finished, so every load run actually had no load. A `pidin` snapshot showing the hogs already dead gave it away. Second, my interval-based "late tick" metric reported 1 late tick for a run that was blind for 30 s, because queued timer pulses drained in a burst. I fixed the ordering, print each hog's time window as proof of overlap, and now measure samples and alerts against their schedule.
+- **Pulse priority.** In QNX, a thread that receives a pulse runs at the pulse's priority. My timer pulse carried priority 50, which would boost the acquisition thread even in the "default priority" experiment, so that experiment uses `SIGEV_PULSE_PRIO_INHERIT`.
 - **Measuring the wrong thing.** My first analysis used the magnitude of the acceleration vector, which barely moves when a joint vibrates sideways to gravity. I switched to a 3-axis variance-based RMS.
 - **No robot access during the hackathon.** I built a physics-based joint simulation, calibrated with real sensor noise, so the closed loop has a plant that actually responds.
 
@@ -85,7 +86,7 @@ How QNX's message-passing primitives (channels, pulses, priority inheritance thr
 
 ### What's next for vibguard
 - Run it on the real SCARA robot: live WT901 input and a real jerk-limit command to the ESP32 motion controller.
-- Bare-metal timing on a Raspberry Pi 5 or x86 board, and confirming why the default-priority loop survived the hogs under KVM.
+- Bare-metal timing on a Raspberry Pi 5 or x86 board.
 - Per-axis and frequency-aware control, for example notch-shaping the profile around the detected resonance from the FFT.
 
 ---

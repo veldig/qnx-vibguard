@@ -419,15 +419,18 @@ static void *ctl_thread(void *arg) {
 static volatile double g_hog_secs;
 static volatile unsigned long g_hog_spins;
 static volatile int g_hog_rc[64];
+static volatile uint64_t g_hog_t0[64], g_hog_t1[64];
 static void *hog_thread(void *arg) {
     int id = (int)(intptr_t)arg;
     if (C.hog_prio > 0) {
         struct sched_param sp = { .sched_priority = C.hog_prio };
         g_hog_rc[id] = pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp);
     }
-    uint64_t end = now_ns() + (uint64_t)(g_hog_secs * 1e9);
+    g_hog_t0[id] = now_ns();
+    uint64_t end = g_hog_t0[id] + (uint64_t)(g_hog_secs * 1e9);
     unsigned long n = 0;
     while (now_ns() < end) { for (volatile int i = 0; i < 1000; i++) {} n++; }
+    g_hog_t1[id] = now_ns();
     __sync_fetch_and_add(&g_hog_spins, n);
     return NULL;
 }
@@ -494,11 +497,15 @@ int main(int argc, char **argv) {
     t0_ns = now_ns();
     pthread_t th[64]; int nh = C.hogs > 64 ? 64 : C.hogs;
     g_hog_secs = total / (C.rate_hz * C.speedup);
-    for (int i = 0; i < nh; i++) pthread_create(&th[i], NULL, hog_thread, (void *)(intptr_t)i);
     pthread_t ta, tn, tc;
     pthread_create(&tc, NULL, ctl_thread, NULL);
     pthread_create(&tn, NULL, ana_thread, NULL);
     pthread_create(&ta, NULL, acq_thread, NULL);
+    /* Start the noisy neighbours only after acquisition is running. Creating them first was a bug:
+       main runs at default priority, so once FIFO hogs filled every CPU, main could not create the
+       vibguard threads until the hogs finished, and the "load" test actually ran with no load. */
+    for (int w = 0; w < 2000 && acq_n < 2; w++) usleep(1000);
+    for (int i = 0; i < nh; i++) pthread_create(&th[i], NULL, hog_thread, (void *)(intptr_t)i);
 
     /* dashboard (non real-time) */
     const char *stname[] = { "NORMAL", "ALERT", "RECOVER" };
@@ -567,6 +574,12 @@ int main(int argc, char **argv) {
                 fprintf(out, "hogs: %lu spin blocks total; setschedparam rc:", g_hog_spins);
                 for (int i = 0; i < C.hogs && i < 64; i++) fprintf(out, " %d", g_hog_rc[i]);
                 fprintf(out, "\n");
+                /* prove the hogs actually overlapped the acquisition window */
+                double a0 = acq_n ? (acq_t[0] - t0_ns) / 1e9 : 0, a1 = acq_n ? (acq_t[acq_n - 1] - t0_ns) / 1e9 : 0;
+                fprintf(out, "acquisition window: %.2f to %.2f s; hog windows:", a0, a1);
+                for (int i = 0; i < C.hogs && i < 64; i++)
+                    fprintf(out, " [%.2f to %.2f s]", (g_hog_t0[i] - t0_ns) / 1e9, (g_hog_t1[i] - t0_ns) / 1e9);
+                fprintf(out, "\n");
             }
             /* how far analysis fell behind acquisition: newest sample age when analysis ran */
             double lagmax = 0; for (long i = 0; i < ana_n; i++) { double lag = (ana[i].t_done_ns - ana[i].t_last_ns) / 1e3; if (lag > lagmax) lagmax = lag; }
@@ -574,6 +587,25 @@ int main(int argc, char **argv) {
         }
         stats("acq |jitter| us", v, n, out);
         fprintf(out, "ticks later than 1.5x period: %ld of %ld (%.2f%%)\n", late, acq_n - 1, acq_n > 1 ? 100.0 * late / (acq_n - 1) : 0.0);
+        /* Interval-based counts miss a stall followed by a burst of queued ticks, so also measure
+           each sample against its schedule (first tick + i * period). */
+        {
+            double per_ns = 1e9 / (C.rate_hz * C.speedup), behind_max = 0; long behind_n = 0;
+            for (long i = 0; i < acq_n; i++) {
+                double b = ((double)acq_t[i] - (double)acq_t[0] - i * per_ns) / 1e6;
+                if (b > behind_max) behind_max = b;
+                if (b > per_ns / 2e6) behind_n++;
+            }
+            double gap_max = 0; for (long i = 1; i < acq_n; i++) { double g = (acq_t[i] - acq_t[i - 1]) / 1e6; if (g > gap_max) gap_max = g; }
+            fprintf(out, "longest gap between ticks: %.1f ms; max sample behind schedule: %.1f ms; samples > half a period behind: %ld of %ld (%.1f%%)\n",
+                    gap_max, behind_max, behind_n, acq_n, acq_n ? 100.0 * behind_n / acq_n : 0.0);
+            double dmax = 0;
+            for (long i = 0; i < nevt; i++) if (evts[i].kind != 3 && evts[i].sample_idx < acq_n) {
+                double sched = ((double)acq_t[0] - (double)t0_ns + evts[i].sample_idx * per_ns) / 1e9;
+                double d = (evts[i].t_s - sched) * 1e3; if (d > dmax) dmax = d;
+            }
+            if (nevt) fprintf(out, "max alert delay vs the sample's scheduled time: %.3f ms\n", dmax);
+        }
         n = 0; for (long i = 0; i < ana_n; i++) v[n++] = ana[i].ana_us;
         stats("analysis time us", v, n, out);
         n = 0; for (long i = 0; i < nevt; i++) if (evts[i].kind != 3) v[n++] = evts[i].latency_us;

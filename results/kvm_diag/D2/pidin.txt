@@ -1,0 +1,55 @@
+--- sample 1 Wed Nov 25 18:00:02 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1138710   1 ./vibguard                    10r NANOSLEEP                                  
+ 1138710   2 ./vibguard                    15f DEAD                                       
+ 1138710   3 ./vibguard                    15f DEAD                                       
+ 1138710   4 ./vibguard                    15f RUNNING                                    
+ 1138710   5 ./vibguard                    10r SEM            3268bdd37c                  
+ 1138710   6 ./vibguard                    10r SEM            3268bdd384                  
+ 1138710   7 ./vibguard                    10r RECEIVE        1                           
+--- sample 2 Wed Nov 25 18:00:04 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1138710   1 ./vibguard                    10r NANOSLEEP                                  
+ 1138710   2 ./vibguard                    15f DEAD                                       
+ 1138710   3 ./vibguard                    15f DEAD                                       
+ 1138710   4 ./vibguard                    15f RUNNING                                    
+ 1138710   5 ./vibguard                    10r SEM            3268bdd37c                  
+ 1138710   6 ./vibguard                    10r SEM            3268bdd384                  
+ 1138710   7 ./vibguard                    10r RECEIVE        1                           
+--- sample 3 Wed Nov 25 18:00:06 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1138710   1 ./vibguard                    10r NANOSLEEP                                  
+ 1138710   2 ./vibguard                    15f DEAD                                       
+ 1138710   3 ./vibguard                    15f DEAD                                       
+ 1138710   4 ./vibguard                    15f RUNNING                                    
+ 1138710   5 ./vibguard                    10r SEM            3268bdd37c                  
+ 1138710   6 ./vibguard                    10r SEM            3268bdd384                  
+ 1138710   7 ./vibguard                    10r RECEIVE        1                           
+--- sample 4 Wed Nov 25 18:00:08 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1138710   1 ./vibguard                    10r NANOSLEEP                                  
+ 1138710   2 ./vibguard                    15f DEAD                                       
+ 1138710   3 ./vibguard                    15f DEAD                                       
+ 1138710   4 ./vibguard                    15f RUNNING                                    
+ 1138710   5 ./vibguard                    10r SEM            3268bdd37c                  
+ 1138710   6 ./vibguard                    10r SEM            3268bdd384                  
+ 1138710   7 ./vibguard                    10r RECEIVE        1                           
+--- sample 5 Wed Nov 25 18:00:10 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1138710   1 ./vibguard                    10r NANOSLEEP                                  
+ 1138710   2 ./vibguard                    15f DEAD                                       
+ 1138710   3 ./vibguard                    15f DEAD                                       
+ 1138710   4 ./vibguard                    15f RUNNING                                    
+ 1138710   5 ./vibguard                    10r SEM            3268bdd37c                  
+ 1138710   6 ./vibguard                    10r SEM            3268bdd384                  
+ 1138710   7 ./vibguard                    10r RECEIVE        1                           
+--- sample 6 Wed Nov 25 18:00:12 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1138710   1 ./vibguard                    10r NANOSLEEP                                  
+ 1138710   2 ./vibguard                    15f DEAD                                       
+ 1138710   3 ./vibguard                    15f DEAD                                       
+ 1138710   4 ./vibguard                    15f RUNNING                                    
+ 1138710   5 ./vibguard                    10r SEM            3268bdd37c                  
+ 1138710   6 ./vibguard                    10r SEM            3268bdd384                  
+ 1138710   7 ./vibguard                    10r RECEIVE        1                           
+sampler_done Wed Nov 25 18:00:14 UTC 2026

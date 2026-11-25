@@ -1,0 +1,49 @@
+--- sample 1 Wed Nov 25 18:01:32 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1720342   1 ./vibguard                    10r NANOSLEEP                                  
+ 1720342   2 ./vibguard                    15f DEAD                                       
+ 1720342   3 ./vibguard                    15f DEAD                                       
+ 1720342   4 ./vibguard                    10r SEM            58d5ef237c                  
+ 1720342   5 ./vibguard                    10r SEM            58d5ef2384                  
+ 1720342   6 ./vibguard                    10r RECEIVE        1                           
+--- sample 2 Wed Nov 25 18:01:34 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1720342   1 ./vibguard                    10r NANOSLEEP                                  
+ 1720342   2 ./vibguard                    15f DEAD                                       
+ 1720342   3 ./vibguard                    15f DEAD                                       
+ 1720342   4 ./vibguard                    10r SEM            58d5ef237c                  
+ 1720342   5 ./vibguard                    10r SEM            58d5ef2384                  
+ 1720342   6 ./vibguard                    10r RECEIVE        1                           
+--- sample 3 Wed Nov 25 18:01:36 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1720342   1 ./vibguard                    10r NANOSLEEP                                  
+ 1720342   2 ./vibguard                    15f DEAD                                       
+ 1720342   3 ./vibguard                    15f DEAD                                       
+ 1720342   4 ./vibguard                    10r SEM            58d5ef237c                  
+ 1720342   5 ./vibguard                    10r SEM            58d5ef2384                  
+ 1720342   6 ./vibguard                    10r RECEIVE        1                           
+--- sample 4 Wed Nov 25 18:01:38 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1720342   1 ./vibguard                    10r NANOSLEEP                                  
+ 1720342   2 ./vibguard                    15f DEAD                                       
+ 1720342   3 ./vibguard                    15f DEAD                                       
+ 1720342   4 ./vibguard                    10r SEM            58d5ef237c                  
+ 1720342   5 ./vibguard                    10r SEM            58d5ef2384                  
+ 1720342   6 ./vibguard                    10r RECEIVE        1                           
+--- sample 5 Wed Nov 25 18:01:40 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1720342   1 ./vibguard                    10r NANOSLEEP                                  
+ 1720342   2 ./vibguard                    15f DEAD                                       
+ 1720342   3 ./vibguard                    15f DEAD                                       
+ 1720342   4 ./vibguard                    10r SEM            58d5ef237c                  
+ 1720342   5 ./vibguard                    10r SEM            58d5ef2384                  
+ 1720342   6 ./vibguard                    10r RECEIVE        1                           
+--- sample 6 Wed Nov 25 18:01:42 UTC 2026
+     pid tid name                         prio STATE          Blocked                     
+ 1720342   1 ./vibguard                    10r NANOSLEEP                                  
+ 1720342   2 ./vibguard                    15f DEAD                                       
+ 1720342   3 ./vibguard                    15f DEAD                                       
+ 1720342   4 ./vibguard                    10r SEM            58d5ef237c                  
+ 1720342   5 ./vibguard                    10r SEM            58d5ef2384                  
+ 1720342   6 ./vibguard                    10r RECEIVE        1                           
+sampler_done Wed Nov 25 18:01:44 UTC 2026
