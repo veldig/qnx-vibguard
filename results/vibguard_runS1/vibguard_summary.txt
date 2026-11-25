@@ -1,0 +1,9 @@
+
+=== vibguard summary (measured on this run) ===
+input simulated SCARA joint, 12000 samples replayed, speedup x1.0
+acq |jitter| us              n=11999  mean=    585.3  min=      0.5  p50=    326.1  p99=   1735.5  max=  18284.6
+analysis time us             n=1174   mean=    358.9  min=    181.3  p50=    332.6  p99=    563.0  max=    657.1
+alert latency us             n=4      mean=    607.3  min=    533.9  p50=    659.1  p99=    659.1  max=    698.2
+events: 2 alerts (jerk lowered), 2 further reductions, 4 restore steps; final jerk 25.0%
+max window RMS 157.0 mg
+sim: mean RMS while drawing 26.4 mg (849 windows); moves completed 37, mean move time 1.204 s

@@ -1,0 +1,3 @@
+t_s,sample_idx,sample_t_s,kind,rms_mg,jerk_from_pct,jerk_to_pct,latency_us
+35.0561,1009,5.0450,alert_lower,31.83,100.0,50.0,872.5
+35.5569,1109,5.5450,lower_more,88.96,50.0,25.0,1216.1

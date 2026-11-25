@@ -1,0 +1,8 @@
+
+=== vibguard summary (measured on this run) ===
+input data/wt901_20261005_121751.csv, 8000 samples replayed, speedup x1.0
+acq |jitter| us              n=7999   mean=    595.3  min=      0.5  p50=    341.1  p99=   1737.5  max=   6703.9
+analysis time us             n=775    mean=    365.1  min=    186.3  p50=    338.6  p99=    573.0  max=   1363.3
+alert latency us             n=2      mean=    668.6  min=    567.0  p50=    770.3  p99=    567.0  max=    770.3
+events: 1 alerts (jerk lowered), 1 further reductions, 4 restore steps; final jerk 100.0%
+max window RMS 593.4 mg
