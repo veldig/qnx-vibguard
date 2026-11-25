@@ -113,7 +113,8 @@ On an Apple Silicon Mac (the setup I used):
 ```bash
 bash go.sh            # QEMU, build container, minimal QNX VM, boot, hello + 200 Hz timer test
 bash run_vibguard.sh  # build vibguard with qcc, run replay, guard off, guard on
-bash run_loadtest.sh  # noisy-neighbour test
+bash run_loadtest.sh  # noisy-neighbour test on the emulated target
+PROJECT=<gcp-project> REMOTE=remote_kvm_load.sh OUTDIR=results/kvm_load bash run_cloud_kvm.sh  # same test under KVM on a temporary Google Cloud VM (deleted afterwards)
 python3 scripts/plot_compare.py results/vibguard_runS0 results/vibguard_runS1 results/vibguard_before_after.png
 ```
 
